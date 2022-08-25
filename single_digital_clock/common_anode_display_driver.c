@@ -1,4 +1,6 @@
 #include "common_anode_display_driver.h"
+#include "nativeSPIDriver.h"
+#include "USARTSPIDriver.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -17,7 +19,8 @@ ISR (TIMER1_OVF_vect)
 #else
 	ENABLE_PORT &= ~ENABLE_PORT_MASK; 				//Disable display (1 logic)
 #endif
-	DATA_PORT = data_buffer[buffer_index];			//Update data (negative values already inverted)
+	nativeSPIDriverWrite(data_buffer[buffer_index]);			//Update data (negative values already inverted)
+	USARTSPIDriverWrite(data_buffer[buffer_index]);
 #ifdef zero_logic
 	ENABLE_PORT &= ~enable_buffer[buffer_index];	//Re-enable display on the following digit (enable buffer contents are already masked, 0 logic)
 #else
@@ -32,12 +35,16 @@ ISR (TIMER1_OVF_vect)
 
 void display_init(unsigned char I2C_display_address)
 {
+	(void) I2C_display_address;
 	buffer_index=0; 			//Clears data	
+	//SPI init
+	nativeSPIDriverInit();
+	USARTSPIDriverInitTXOnly();
 	ENABLE_DDR = (ENABLE_DDR & (~ENABLE_PORT_MASK)) | (ENABLE_DDR_CONTENT & ENABLE_PORT_MASK); //Set DDR's
-	DATA_DDR = DATA_DDR_CONTENT;
+	
 	//ENABLE_PORT &= ~ENABLE_PORT_MASK; 	//Disables display, 1 logic
 	ENABLE_PORT |= ENABLE_PORT_MASK; 	//Disables display, 0 logic
-	DATA_PORT |= DIGIT_DISABLED;
+	
 	PORTB&=~(1<<PORTB1); //Timer PWM output on pin 15 (PB1, OC1A)
 	DDRB|=(1<<PORTB1);
 	//Timer init
@@ -54,10 +61,16 @@ void display_init(unsigned char I2C_display_address)
 	TIFR1|=(1<<TOV1);			//Interrupts enable on timer1 overflow vector (freq is set t fclk/(256+256) = 305Hz = 3,2s)
 	TIMSK1|=(1<<TOIE1);
 	
+	// DEBUG
+	DDRB|=(1<<PORTB2);
+	PORTB&= ~(1<<PORTB2);
 }
 
 void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string, unsigned char decimal_dots_mask, unsigned char special_dots_mask)
 {
+	(void) I2C_display_address;
+	(void) display_type;
+	(void) decimal_dots_mask;
 	unsigned char i;			//Copies and inverts data
 	for (i=0; i<DISPLAY_BUFFER_SIZE; ++i)
 	{
@@ -68,11 +81,15 @@ void display_update(unsigned char I2C_display_address, unsigned char display_typ
 
 void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char special_dots_mask)
 {
+	(void) I2C_display_address;
+	(void) display_type;
+	(void) decimal_dots_mask;
 	data_buffer[1]|= special_dots_mask;
 }
 
 void clear_display(unsigned char I2C_display_address)
 {
+	(void) I2C_display_address;
 	data_buffer[0]=DIGIT_DISABLED;
 	data_buffer[1]=DIGIT_DISABLED;
 	data_buffer[2]=DIGIT_DISABLED;
@@ -81,11 +98,20 @@ void clear_display(unsigned char I2C_display_address)
 
 void set_brightness_display(unsigned char I2C_display_address, unsigned char brightness)
 {
+	(void) I2C_display_address;
 	OCR1AL=brightness;			//Copies data
 }
 
-void turn_on_and_blink_display(unsigned char I2C_display_address, unsigned char display_blinking_mode);
-void turn_off_display(unsigned char I2C_display_address);
+void turn_on_and_blink_display(unsigned char I2C_display_address, unsigned char display_blinking_mode)
+{
+	(void) I2C_display_address;
+	(void) display_blinking_mode;
+}
+
+void turn_off_display(unsigned char I2C_display_address)
+{
+	(void) I2C_display_address;
+}
 
 
 //Casts between ASCII char value to 7 segments display mask

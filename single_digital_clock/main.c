@@ -99,9 +99,6 @@ typedef enum
 
 int main (void)
 {	
-
-	unsigned int i;	//Iterator
-	
 	volatile unsigned char adc_buffer=0;
 		
 	volatile fsm_t clock_fsm; //Clock FSM model
@@ -146,11 +143,9 @@ int main (void)
 	gpio_init();	//Inits GPIO												
 	TWI_Master_Initialise(); //Inits I2C
 	InitADC();	
-	sei();
-	display_init(HT16K33_1_WRITE_ADDRESS);
-	display_init(HT16K33_2_WRITE_ADDRESS);
-	display_update(HT16K33_1_WRITE_ADDRESS, 0, str_buffer, 0, 0);
-	display_update(HT16K33_2_WRITE_ADDRESS, 0, str_buffer, 0, 0);
+	display_init(0);
+	sei();	
+	display_update(0, 0, str_buffer, 0, 0);
 	adc_buffer=(ReadADC(3));
 	set_brightness_display(0, adc_buffer);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
@@ -304,7 +299,7 @@ void showtime(fsm_t* this)
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(HT16K33_2_WRITE_ADDRESS, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
 }
 
 void showtime_and_stop_timer(fsm_t* this)
@@ -336,7 +331,7 @@ void blinktime(fsm_t* this)
 		str_buffer[5]=' ';
 		str_buffer[6]=' ';
 		str_buffer[7]=' ';
-		display_update(HT16K33_2_WRITE_ADDRESS, 0, str_buffer, 0, 0);
+		display_update(0, 0, str_buffer, 0, 0);
 	}	
 }
 
@@ -371,7 +366,7 @@ void blinkhour(fsm_t* this)
 	}
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(HT16K33_2_WRITE_ADDRESS, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
 	
 }
 
@@ -441,7 +436,7 @@ void blinkminute(fsm_t* this)
 		str_buffer[0]=' ';
 	}
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
-	display_update(HT16K33_2_WRITE_ADDRESS, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
 }
 
 void modify_minute_once(fsm_t* this)

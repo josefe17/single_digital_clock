@@ -12,5 +12,5 @@
 #define DD_SCK DDB5
 
 void nativeSPIDriverInit();
-void nativeSPIDriverWrite(unsigned char byte);
+void nativeSPIDriverWrite(unsigned char data);
 

@@ -16,11 +16,14 @@ void nativeSPIDriverInit()
 	SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0);
 }
 
-void nativeSPIDriverWrite(unsigned char byte)
+void nativeSPIDriverWrite(unsigned char data)
 {
 	/* Start transmission */
-	SPDR = byte;
+	PORTB|= (1<<PORTB2);
+	SPDR = data;
 	/* Wait for transmission complete */
-	while(!(SPSR & (1<<SPIF)))
-	;
+	while(!(SPSR & (1<<SPIF)));	
+	//PORTB&= ~(1<<PORTB2);
+	(void) SPDR;
+	//PORTB&= ~(1<<PORTB2);
 }
