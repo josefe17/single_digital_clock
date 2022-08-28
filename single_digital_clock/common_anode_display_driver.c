@@ -11,6 +11,8 @@ volatile unsigned char enable_buffer[DISPLAY_BUFFER_SIZE]={DIGIT_0_MASK, DIGIT_1
 volatile unsigned char buffer_index;
 
 unsigned char ascii_2_7segment(unsigned char character);
+unsigned char ascii_2_7segment_upside_down(unsigned char character);
+unsigned char ascii_2_7segment_DVBX52010_PS2(unsigned char character);
 
 ISR (TIMER1_OVF_vect)
 {
@@ -74,7 +76,18 @@ void display_update(unsigned char I2C_display_address, unsigned char display_typ
 	unsigned char i;			//Copies and inverts data
 	for (i=0; i<DISPLAY_BUFFER_SIZE; ++i)
 	{
-		data_buffer[i] = ~(ascii_2_7segment(data_string[i]));
+		switch (display_type)
+		{
+			case DISPLAY_TYPE_UPSIDE_DOWN:
+				data_buffer[i] = ~(ascii_2_7segment_upside_down(data_string[i]));
+				break;
+			case DISPLAY_TYPE_DVBX5210_PS2:
+				data_buffer[i] = ~(ascii_2_7segment_DVBX52010_PS2(data_string[i]));
+				break;
+			default:
+				data_buffer[i] = ~(ascii_2_7segment(data_string[i]));
+				break;
+		}			
 	}
 	data_buffer[1]&=~ special_dots_mask;
 }
@@ -196,5 +209,25 @@ unsigned char ascii_2_7segment(unsigned char character)
 		default: return 0b00001000; //_
 
 	}
+}
+
+unsigned char ascii_2_7segment_upside_down(unsigned char character)
+{
+	unsigned char seven_segment_base = ascii_2_7segment(character);
+	return ((seven_segment_base & 0b11000000) | ((seven_segment_base & 0b00000111) << 3) | ((seven_segment_base & 0b00111000) >> 3));
+	
+}
+
+unsigned char ascii_2_7segment_DVBX52010_PS2(unsigned char character)
+{
+	unsigned char seven_segment_base = ascii_2_7segment(character);
+	return ((seven_segment_base & 0x01) |
+			((seven_segment_base & 0x02) << 1) |
+			((seven_segment_base & 0x04) << 3) |
+			((seven_segment_base & 0x08) << 4) |
+			((seven_segment_base & 0x10) << 2) |
+			((seven_segment_base & 0x20) >> 4) |
+			((seven_segment_base & 0x40) >> 2) |
+			((seven_segment_base & 0x80) >> 4));
 }
 	

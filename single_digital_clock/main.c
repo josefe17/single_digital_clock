@@ -145,7 +145,7 @@ int main (void)
 	InitADC();	
 	display_init(0);
 	sei();	
-	display_update(0, 0, str_buffer, 0, 0);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, 0);
 	adc_buffer=(ReadADC(3));
 	set_brightness_display(0, adc_buffer);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
@@ -299,7 +299,7 @@ void showtime(fsm_t* this)
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
 }
 
 void showtime_and_stop_timer(fsm_t* this)
@@ -331,7 +331,7 @@ void blinktime(fsm_t* this)
 		str_buffer[5]=' ';
 		str_buffer[6]=' ';
 		str_buffer[7]=' ';
-		display_update(0, 0, str_buffer, 0, 0);
+		display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, 0);
 	}	
 }
 
@@ -366,7 +366,7 @@ void blinkhour(fsm_t* this)
 	}
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
 	
 }
 
@@ -436,7 +436,7 @@ void blinkminute(fsm_t* this)
 		str_buffer[0]=' ';
 	}
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
-	display_update(0, 0, str_buffer, 0, (1 & current_time.sec)<<7);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
 }
 
 void modify_minute_once(fsm_t* this)

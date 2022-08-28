@@ -17,6 +17,10 @@
 #define DATA_DDR			DDRD
 #define DATA_DDR_CONTENT 	0b11111111 //As output
 
+#define DISPLAY_TYPE_STANDARD 0
+#define DISPLAY_TYPE_UPSIDE_DOWN 1
+#define DISPLAY_TYPE_DVBX5210_PS2 2
+
 /*Prototypes*/
 void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string, unsigned char decimal_dots_mask, unsigned char special_dots_mask);
 void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char special_dots_mask);
