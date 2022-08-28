@@ -6,7 +6,10 @@
 
 #define zero_logic
 
-volatile unsigned char data_buffer[DISPLAY_BUFFER_SIZE]={DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED};
+// Native SPI, clock, DVBX5210 PS2 type
+volatile unsigned char data_buffer_1[DISPLAY_BUFFER_SIZE]={DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED};
+// USART SPI, temperature, inverted type
+volatile unsigned char data_buffer_2[DISPLAY_BUFFER_SIZE]={DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED, DIGIT_DISABLED};
 volatile unsigned char enable_buffer[DISPLAY_BUFFER_SIZE]={DIGIT_0_MASK, DIGIT_1_MASK, DIGIT_2_MASK, DIGIT_3_MASK};
 volatile unsigned char buffer_index;
 
@@ -21,8 +24,8 @@ ISR (TIMER1_OVF_vect)
 #else
 	ENABLE_PORT &= ~ENABLE_PORT_MASK; 				//Disable display (1 logic)
 #endif
-	nativeSPIDriverWrite(data_buffer[buffer_index]);			//Update data (negative values already inverted)
-	USARTSPIDriverWrite(data_buffer[buffer_index]);
+	nativeSPIDriverWrite(data_buffer_1[buffer_index]);			//Update data (negative values already inverted)
+	USARTSPIDriverWrite(data_buffer_2[buffer_index]);
 #ifdef zero_logic
 	ENABLE_PORT &= ~enable_buffer[buffer_index];	//Re-enable display on the following digit (enable buffer contents are already masked, 0 logic)
 #else
@@ -68,45 +71,57 @@ void display_init(unsigned char I2C_display_address)
 	PORTB&= ~(1<<PORTB2);
 }
 
-void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string, unsigned char decimal_dots_mask, unsigned char special_dots_mask)
+void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string)
 {
 	(void) I2C_display_address;
 	(void) display_type;
-	(void) decimal_dots_mask;
 	unsigned char i;			//Copies and inverts data
 	for (i=0; i<DISPLAY_BUFFER_SIZE; ++i)
 	{
 		switch (display_type)
 		{
-			case DISPLAY_TYPE_UPSIDE_DOWN:
-				data_buffer[i] = ~(ascii_2_7segment_upside_down(data_string[i]));
-				break;
 			case DISPLAY_TYPE_DVBX5210_PS2:
-				data_buffer[i] = ~(ascii_2_7segment_DVBX52010_PS2(data_string[i]));
+				data_buffer_1[i] = ~(ascii_2_7segment_DVBX52010_PS2(data_string[i]));
 				break;
-			default:
-				data_buffer[i] = ~(ascii_2_7segment(data_string[i]));
+			case DISPLAY_TYPE_UPSIDE_DOWN:
+				data_buffer_2[i] = ~(ascii_2_7segment_upside_down(data_string[i]));
+				break;
+			default:				
 				break;
 		}			
 	}
-	data_buffer[1]&=~ special_dots_mask;
+	
 }
 
-void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char special_dots_mask)
+void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char decimal_dots_mask_position, unsigned char special_dots_mask, unsigned char special_dots_mask_position)
 {
-	(void) I2C_display_address;
-	(void) display_type;
+	(void) I2C_display_address;	
 	(void) decimal_dots_mask;
-	data_buffer[1]|= special_dots_mask;
+	(void) decimal_dots_mask_position;
+	switch (display_type)
+	{
+		case DISPLAY_TYPE_DVBX5210_PS2:
+			data_buffer_1[special_dots_mask_position]&= ~special_dots_mask;
+			break;
+		case DISPLAY_TYPE_UPSIDE_DOWN:
+			data_buffer_2[special_dots_mask_position]&= ~special_dots_mask;
+			break;
+		default:
+			break;
+	}
 }
 
 void clear_display(unsigned char I2C_display_address)
 {
 	(void) I2C_display_address;
-	data_buffer[0]=DIGIT_DISABLED;
-	data_buffer[1]=DIGIT_DISABLED;
-	data_buffer[2]=DIGIT_DISABLED;
-	data_buffer[3]=DIGIT_DISABLED;
+	data_buffer_1[0]=DIGIT_DISABLED;
+	data_buffer_1[1]=DIGIT_DISABLED;
+	data_buffer_1[2]=DIGIT_DISABLED;
+	data_buffer_1[3]=DIGIT_DISABLED;
+	data_buffer_2[0]=DIGIT_DISABLED;
+	data_buffer_2[1]=DIGIT_DISABLED;
+	data_buffer_2[2]=DIGIT_DISABLED;
+	data_buffer_2[3]=DIGIT_DISABLED;
 }
 
 void set_brightness_display(unsigned char I2C_display_address, unsigned char brightness)

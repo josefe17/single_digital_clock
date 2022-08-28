@@ -13,11 +13,11 @@
 
 /*Compiling options*/
 /*Used to optimize size*/
-#define _USE_ALARM1
-#define _USE_ALARM2
+//#define _USE_ALARM1
+//#define _USE_ALARM2
 //#define _USE_OSCILLATOR_DISABLE
 #define _USE_TEMP_SENSOR
-//#define _USE_CONFIG_SQUARE_INT_PIN
+#define _USE_CONFIG_SQUARE_INT_PIN
 //#define _USE_CONFIG_32K_PIN	
 
 /*Data type choser*/

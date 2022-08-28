@@ -22,8 +22,8 @@
 #define DISPLAY_TYPE_DVBX5210_PS2 2
 
 /*Prototypes*/
-void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string, unsigned char decimal_dots_mask, unsigned char special_dots_mask);
-void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char special_dots_mask);
+void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string);
+void dots_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char decimal_dots_mask, unsigned char decimal_dots_mask_position, unsigned char special_dots_mask, unsigned char special_dots_mask_position);
 void clear_display(unsigned char I2C_display_address);
 void display_init(unsigned char I2C_display_address);
 void turn_on_and_blink_display(unsigned char I2C_display_address, unsigned char display_blinking_mode);

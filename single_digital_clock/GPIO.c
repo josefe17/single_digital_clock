@@ -26,6 +26,18 @@ void gpio_init(void)
 	PORTD|=(PORTD_RESET_VALUE & GPIO_PORTD_MASK);
 }
 
+void update_clock_output(unsigned char value)
+{
+	if (value)
+	{
+		GPIO_CLOCK_2HZ_PORT |= (1 << GPIO_CLOCK_2HZ);
+	}
+	else
+	{
+		GPIO_CLOCK_2HZ_PORT &= ~(1 << GPIO_CLOCK_2HZ);
+	}
+}
+
 void update_button_flags(void)
 {
 	button_flags=(((~PINC) & GPIO_PORTC_MASK)<<5) | (((~PINB) & GPIO_PORTB_MASK)<<4);

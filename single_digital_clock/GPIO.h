@@ -9,12 +9,12 @@
 #ifndef GPIO_H_
 #define GPIO_H_
 
-#define GPIO_PORTB_MASK		0b00000000		//Pins used as gpio
+#define GPIO_PORTB_MASK		0b00000001		//Pins used as gpio
 #define GPIO_PORTC_MASK		0b00000111
 #define GPIO_PORTD_MASK		0b00000000
 
-#define	GPIO_DDRB_MASK		0b00000000	 
-#define GPIO_DDRC_MASK		0b00000000		//All inputs
+#define	GPIO_DDRB_MASK		0b00000001	 
+#define GPIO_DDRC_MASK		0b00000000		//All inputs but PB0
 #define GPIO_DDRD_MASK		0b00000000
 
 #define PORTB_RESET_VALUE	0b00000000		//1 enables pullups or sets 1 logic in outputs
@@ -31,6 +31,9 @@
 #define PD_GPIO6 (PIND & (1<<PIND6))
 #define PD_GPIO7 (PIND & (1<<PIND7))
 
+#define GPIO_CLOCK_2HZ_PORT PORTB
+#define GPIO_CLOCK_2HZ PORTB0
+
 #define SET_BUTTON_MASK		0b0000000010000000 //PC2
 #define UP_BUTTON_MASK		0b0000000001000000 //PC1
 #define DOWN_BUTTON_MASK	0b0000000000100000 //PC0
@@ -40,6 +43,7 @@
 volatile unsigned int button_flags; //A&B
 
 void gpio_init(void);
+void update_clock_output(unsigned char value);
 void update_button_flags(void);
 
 #endif /* GPIO_H_ */

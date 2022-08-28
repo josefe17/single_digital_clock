@@ -81,6 +81,9 @@ void blinkYear (fsm_t* this);
 void modify_year(fsm_t* this);
 void modify_year_once(fsm_t* this);
 
+/* Thermometer funcctions */
+void showtemperature_C(void);
+
 /*Clock FSM states*/
 typedef enum
 {
@@ -144,8 +147,14 @@ int main (void)
 	TWI_Master_Initialise(); //Inits I2C
 	InitADC();	
 	display_init(0);
-	sei();	
-	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, 0);
+	sei();
+	// RTC square wave 1 HZ output
+	configure_square_int_pin(DS3231_WRITE_ADDRESS,PINMODE_SQUARE_WAVE);
+	set_square_freq(DS3231_WRITE_ADDRESS, SQUARE_1HZ);
+	reset_square_battery(DS3231_WRITE_ADDRESS);	
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
+	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
+	update_clock_output(0);
 	adc_buffer=(ReadADC(3));
 	set_brightness_display(0, adc_buffer);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
@@ -158,50 +167,9 @@ int main (void)
 		update_button_flags();
 		adc_buffer=(ReadADC(3));
 		set_brightness_display(0,adc_buffer);
-		fsm_fire(&clock_fsm);			
-		delay_until_tick();	
-		
-//
-//#ifdef temperature
-		//current_time=retrieve_timestamp_from_RTC(DS3231_WRITE_ADDRESS, DATA_BCD);
-		//str_buffer[0]=bcd2char(current_time.hour>>4);
-		//str_buffer[1]=bcd2char(current_time.hour);
-		//str_buffer[2]=bcd2char(current_time.min>>4);
-		//str_buffer[3]=bcd2char(current_time.min);
-		//
-		//temperature_C=get_temperature(DS3231_WRITE_ADDRESS);
-		//if (temperature_C<0)
-		//{
-			//str_buffer[4]='-';
-			//temperature_C*=-1;
-		//}
-		//else
-		//{
-			//str_buffer[4]=' ';
-		//}
-		//aux=(unsigned char) (temperature_C>>8); //Casted to char
-		//str_buffer[6]=bcd2char(dec2bcd(aux));
-		//str_buffer[5]=bcd2char((dec2bcd(aux))>>4);		
-		//str_buffer[7]='C';		
-		//display_update(HT16K33_WRITE_ADDRESS, str_buffer, 0, SECOND_DEGREES_DOT_MASK | (FIRST_COLON_MASK & current_time.sec));
-		//set_brightness_display(HT16K33_WRITE_ADDRESS,(ReadADC(3)>>4)&0x0F);	
-		//delay_until_tick();	
-//#endif // temperature
-//#ifdef calendar
-		//current_time=retrieve_timestamp_from_RTC(DS3231_WRITE_ADDRESS, DATA_BCD);
-		//str_buffer[0]=bcd2char(current_time.dayM>>4);
-		//str_buffer[1]=bcd2char(current_time.dayM);
-		//str_buffer[2]=bcd2char(current_time.month>>4);
-		//str_buffer[3]=bcd2char(current_time.month);
-		//str_buffer[4]=bcd2char((unsigned char) (current_time.year>>12));
-		//str_buffer[5]=bcd2char((unsigned char) (current_time.year>>8));
-		//str_buffer[6]=bcd2char((unsigned char) (current_time.year>>4));
-		//str_buffer[7]=bcd2char((unsigned char) current_time.year);
-		//display_update(HT16K33_WRITE_ADDRESS, str_buffer, (1<<1)|(1<<3), 0);
-		//set_brightness_display(HT16K33_WRITE_ADDRESS,(ReadADC(3)>>4)&0x0F);
-		//delay_until_tick();		
-//#endif // calendar
-		
+		fsm_fire(&clock_fsm);	
+		showtemperature_C();		
+		delay_until_tick();			
 	}	
 }
 
@@ -298,8 +266,10 @@ void showtime(fsm_t* this)
 	}
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
-	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
+	str_buffer[3]=bcd2char(dec2bcd(current_time.min));	
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
+	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
+	update_clock_output(1 & current_time.sec);
 }
 
 void showtime_and_stop_timer(fsm_t* this)
@@ -330,8 +300,10 @@ void blinktime(fsm_t* this)
 		str_buffer[4]=' ';
 		str_buffer[5]=' ';
 		str_buffer[6]=' ';
-		str_buffer[7]=' ';
-		display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, 0);
+		str_buffer[7]=' ';		
+		display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
+		dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, 0, 1);
+		update_clock_output(1 & current_time.sec);
 	}	
 }
 
@@ -366,7 +338,9 @@ void blinkhour(fsm_t* this)
 	}
 	str_buffer[2]=bcd2char(dec2bcd(current_time.min)>>4);
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
-	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
+	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
+	update_clock_output(1 & current_time.sec);
 	
 }
 
@@ -436,7 +410,9 @@ void blinkminute(fsm_t* this)
 		str_buffer[0]=' ';
 	}
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
-	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer, 0, (1 & current_time.sec)<<3);
+	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
+	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
+	update_clock_output(1 & current_time.sec);
 }
 
 void modify_minute_once(fsm_t* this)
@@ -482,6 +458,29 @@ void modify_minute(fsm_t* this)
 	}
 	update_timestamp_to_RTC(DS3231_WRITE_ADDRESS, current_time, DATA_DECIMAL);
 	showtime(this);
+}
+
+
+
+void showtemperature_C(void)
+{
+	
+	signed int temperature_C=get_temperature(DS3231_WRITE_ADDRESS);
+	if (temperature_C<0)
+	{
+		str_buffer[0]='-';
+		temperature_C*=-1;
+	}
+	else
+	{
+		str_buffer[0]=' ';
+	}
+	unsigned char aux=(unsigned char) (temperature_C>>8); //Casted to char
+	str_buffer[1]=bcd2char(dec2bcd(aux));
+	str_buffer[2]=bcd2char((dec2bcd(aux))>>4);	
+	str_buffer[3]= 'C';
+	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
+	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
 }
 
 
