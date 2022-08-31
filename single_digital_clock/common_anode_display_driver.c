@@ -65,10 +65,6 @@ void display_init(unsigned char I2C_display_address)
 	TCCR1B=0b00001100;			//Fast PWM and fclk/256 prescaler (PWM modulation is embedded inside multiplexing duty cylce)
 	TIFR1|=(1<<TOV1);			//Interrupts enable on timer1 overflow vector (freq is set t fclk/(256+256) = 305Hz = 3,2s)
 	TIMSK1|=(1<<TOIE1);
-	
-	// DEBUG
-	DDRB|=(1<<PORTB2);
-	PORTB&= ~(1<<PORTB2);
 }
 
 void display_update(unsigned char I2C_display_address, unsigned char display_type, unsigned char* data_string)

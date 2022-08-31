@@ -147,6 +147,9 @@ int main (void)
 	TWI_Master_Initialise(); //Inits I2C
 	InitADC();	
 	display_init(0);
+	gpio_init();	//Inits GPIO		
+	DDRB |= (1 << DDB0);
+	PORTB &= ~(1 << PORTB0);
 	sei();
 	// RTC square wave 1 HZ output
 	configure_square_int_pin(DS3231_WRITE_ADDRESS,PINMODE_SQUARE_WAVE);
@@ -154,7 +157,7 @@ int main (void)
 	reset_square_battery(DS3231_WRITE_ADDRESS);	
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
-	update_clock_output(0);
+	//update_clock_output(0);
 	adc_buffer=(ReadADC(3));
 	set_brightness_display(0, adc_buffer);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
@@ -164,7 +167,7 @@ int main (void)
 		current_time=retrieve_timestamp_from_RTC(DS3231_WRITE_ADDRESS, DATA_DECIMAL);
 		power_fail_flag=check_oscillator_fault(DS3231_WRITE_ADDRESS);
 		increment_fast_skip_timer();
-		update_button_flags();
+		process_button_scanning_sequence();
 		adc_buffer=(ReadADC(3));
 		set_brightness_display(0,adc_buffer);
 		fsm_fire(&clock_fsm);	
@@ -269,7 +272,15 @@ void showtime(fsm_t* this)
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));	
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
-	update_clock_output(1 & current_time.sec);
+	//update_clock_output(1 & current_time.sec);
+	if (1 & current_time.sec)
+	{
+		PORTB &= ~(1 << PORTB0);
+	}
+	else
+	{
+		PORTB |= (1 << PORTB0);
+	}
 }
 
 void showtime_and_stop_timer(fsm_t* this)
@@ -303,7 +314,15 @@ void blinktime(fsm_t* this)
 		str_buffer[7]=' ';		
 		display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 		dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, 0, 1);
-		update_clock_output(1 & current_time.sec);
+		//update_clock_output(1 & current_time.sec);
+		if (1 & current_time.sec)
+		{
+			PORTB &= ~(1 << PORTB0);
+		}
+		else
+		{
+			PORTB |= (1 << PORTB0);
+		}
 	}	
 }
 
@@ -340,8 +359,15 @@ void blinkhour(fsm_t* this)
 	str_buffer[3]=bcd2char(dec2bcd(current_time.min));
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
-	update_clock_output(1 & current_time.sec);
-	
+	//update_clock_output(1 & current_time.sec);
+	if (1 & current_time.sec)
+	{
+		PORTB &= ~(1 << PORTB0);
+	}
+	else
+	{
+		PORTB |= (1 << PORTB0);
+	}
 }
 
 
@@ -412,7 +438,15 @@ void blinkminute(fsm_t* this)
 	str_buffer[1]=bcd2char(dec2bcd(current_time.hour));
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	dots_update(0, DISPLAY_TYPE_DVBX5210_PS2, 0, 0, (1 & current_time.sec)<<3, 1);
-	update_clock_output(1 & current_time.sec);
+	//update_clock_output(1 & current_time.sec);
+	if (1 & current_time.sec)
+	{
+		PORTB &= ~(1 << PORTB0);
+	}
+	else
+	{
+		PORTB |= (1 << PORTB0);
+	}
 }
 
 void modify_minute_once(fsm_t* this)
@@ -464,7 +498,6 @@ void modify_minute(fsm_t* this)
 
 void showtemperature_C(void)
 {
-	
 	signed int temperature_C=get_temperature(DS3231_WRITE_ADDRESS);
 	if (temperature_C<0)
 	{
@@ -475,10 +508,14 @@ void showtemperature_C(void)
 	{
 		str_buffer[0]=' ';
 	}
-	unsigned char aux=(unsigned char) (temperature_C>>8); //Casted to char
-	str_buffer[1]=bcd2char(dec2bcd(aux));
-	str_buffer[2]=bcd2char((dec2bcd(aux))>>4);	
-	str_buffer[3]= 'C';
+	
+	//unsigned char aux=(unsigned char) (temperature_C >> 8); //Casted to char	
+	//str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
+	//str_buffer[2]=bcd2char(dec2bcd(aux));	
+	//str_buffer[3]= 'C';
+	str_buffer[1]=bcd2char((button_flags) / 100);
+	str_buffer[2]=bcd2char((dec2bcd(button_flags))>>4);
+	str_buffer[3]=bcd2char(dec2bcd(button_flags));	
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
 }

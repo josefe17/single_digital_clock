@@ -17,5 +17,5 @@ unsigned char bcd2dec(unsigned char bcd)
 
 unsigned char dec2bcd(unsigned char dec)
 {
-	return ((((dec/10) <<4) & 0xF0) | ((dec%10) & 0x0F));
+	return (((((dec % 100 ) / 10) << 4) & 0xF0) | ((dec % 10) & 0x0F));
 }
