@@ -12,6 +12,8 @@
 #include "timer0_tick.h"
 #include "fsm.h"
 #include "GPIO.h"
+#include "ADCDriver.h"
+#include "NTCSensor.h"
 
 #define MS_10_TIMER_COUNT	194
 #define MS_10_DELAY_CYCLES	5
@@ -35,9 +37,6 @@ unsigned char fast_skip_counter;
 unsigned char fast_skip_enable;
 
 /*Prototypes*/
-/*ADC*/
-void InitADC(void);
-unsigned char ReadADC(unsigned char ADCchannel);
 /*Fast skip timer*/
 void start_fast_skip_timer(unsigned char timeout);
 void stop_fast_skip_timer(void);
@@ -102,8 +101,6 @@ typedef enum
 
 int main (void)
 {	
-	volatile unsigned char adc_buffer=0;
-		
 	volatile fsm_t clock_fsm; //Clock FSM model
 	
 	fsm_trans_t clock_tt[] = {
@@ -145,9 +142,9 @@ int main (void)
 	
 	gpio_init();	//Inits GPIO												
 	TWI_Master_Initialise(); //Inits I2C
-	InitADC();	
+	initADC(ADC_128_PRESCALER, ADC_8BIT_RESOLUTION);	
 	display_init(0);
-	gpio_init();	//Inits GPIO		
+	gpio_init();	//Inits GPIO, B0 is cogwheel	
 	DDRB |= (1 << DDB0);
 	PORTB &= ~(1 << PORTB0);
 	sei();
@@ -158,8 +155,7 @@ int main (void)
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	//update_clock_output(0);
-	adc_buffer=(ReadADC(3));
-	set_brightness_display(0, adc_buffer);	
+	set_brightness_display(0, (unsigned char) readADC(ADC_LDR_PIN));	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
 	
 	while(1)
@@ -168,8 +164,7 @@ int main (void)
 		power_fail_flag=check_oscillator_fault(DS3231_WRITE_ADDRESS);
 		increment_fast_skip_timer();
 		process_button_scanning_sequence();
-		adc_buffer=(ReadADC(3));
-		set_brightness_display(0,adc_buffer);
+		set_brightness_display(0, (unsigned char) (ADC_LDR_PIN));	
 		fsm_fire(&clock_fsm);	
 		showtemperature_C();		
 		delay_until_tick();			
@@ -498,7 +493,7 @@ void modify_minute(fsm_t* this)
 
 void showtemperature_C(void)
 {
-	signed int temperature_C=get_temperature(DS3231_WRITE_ADDRESS);
+	signed int temperature_C = (signed int) readTempCelsius(ADC_THERMISTOR_PIN);
 	if (temperature_C<0)
 	{
 		str_buffer[0]='-';
@@ -507,39 +502,13 @@ void showtemperature_C(void)
 	else
 	{
 		str_buffer[0]=' ';
-	}
-	
-	//unsigned char aux=(unsigned char) (temperature_C >> 8); //Casted to char	
-	//str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
-	//str_buffer[2]=bcd2char(dec2bcd(aux));	
-	//str_buffer[3]= 'C';
-	str_buffer[1]=bcd2char((button_flags) / 100);
-	str_buffer[2]=bcd2char((dec2bcd(button_flags))>>4);
-	str_buffer[3]=bcd2char(dec2bcd(button_flags));	
+	}	
+	unsigned char aux = (unsigned char) temperature_C; //Casted to char	
+	str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
+	str_buffer[2]=bcd2char(dec2bcd(aux));	
+	str_buffer[3]= 'C';	
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
 }
-
-
-void InitADC(void)
-{
-	// Select Vref=AVcc & Left justified
-	ADMUX |= (1<<REFS0) | (1<<ADLAR);
-	//set prescaler to 128 and enable ADC
-	ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
-}
-
-unsigned char ReadADC(unsigned char ADCchannel)
-{
-	//select ADC channel with safety mask
-	ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
-	//single conversion mode
-	ADCSRA |= (1<<ADSC);
-	// wait until ADC conversion is complete
-	while( ADCSRA & (1<<ADSC) );
-	return ADCH;
-}
-
-
 
 	
