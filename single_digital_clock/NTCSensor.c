@@ -26,3 +26,8 @@ double readTempCelsius(unsigned char channel)
 {
 	return readTempKelvin(channel) - CESIUS2KELVIN_CONSTANT;
 }
+
+double readTempFahrenheit(unsigned char channel)
+{
+	return (1.8 * readTempCelsius(channel)) + 32.0;
+}
