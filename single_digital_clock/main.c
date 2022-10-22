@@ -26,11 +26,19 @@
 #define DS3231_WRITE_ADDRESS	0b11010000
 #define BRIGHTNESS_CHANNEL		3
 
+/*Const data*/
+#define THERMISTOR_AVERAGE_COUNTS 200
+
 /*Data buffers*/
 unsigned char str_buffer[8]="        ";
 volatile time_data current_time;
 unsigned char power_fail_flag;
 volatile unsigned char ldradc;
+
+/*Thermistor ADC buffers and data*/
+unsigned long thermistorAverageBuffer;
+unsigned int thermistorAverageCounter;
+unsigned int thermistorLastValidRaw;
 
 /*Fast skip timer resources*/
 unsigned char fast_skip_count;
@@ -83,6 +91,7 @@ void modify_year_once(fsm_t* this);
 
 /* Thermometer funcctions */
 void showtemperature_C(void);
+void showtemperature_F(void);
 
 /*Clock FSM states*/
 typedef enum
@@ -158,6 +167,7 @@ int main (void)
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	//update_clock_output(0);
 	ldradc = (unsigned char) (readADC(ADC_LDR_PIN) >> 2);
+	NTCSensorAverageInit(ADC_THERMISTOR_PIN, THERMISTOR_AVERAGE_COUNTS, &thermistorAverageCounter, &thermistorAverageBuffer, &thermistorLastValidRaw);
 	set_brightness_display(0, ldradc);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
 	
@@ -497,7 +507,7 @@ void modify_minute(fsm_t* this)
 
 void showtemperature_C(void)
 {
-	signed int temperature_C = (signed int) readTempCelsius(ADC_THERMISTOR_PIN);
+	signed int temperature_C = (signed int) readTempCelsius(ADC_THERMISTOR_PIN, THERMISTOR_AVERAGE_COUNTS, &thermistorAverageCounter, &thermistorAverageBuffer, &thermistorLastValidRaw);
 	if (temperature_C<0)
 	{
 		str_buffer[0]='-';
@@ -508,11 +518,44 @@ void showtemperature_C(void)
 		str_buffer[0]=' ';
 	}	
 	unsigned char aux = (unsigned char) temperature_C; //Casted to char	
-	str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
+	if (aux / 10 == 0)
+	{
+		str_buffer[1]=' ';
+	}
+	else
+	{
+		str_buffer[1]=bcd2char((dec2bcd(aux))>>4);	
+	}	
 	str_buffer[2]=bcd2char(dec2bcd(aux));	
 	str_buffer[3]= 'C';		
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
 }
 
-	
+
+void showtemperature_F(void)
+{
+	signed int temperature_F = (signed int) readTempFahrenheit(ADC_THERMISTOR_PIN, THERMISTOR_AVERAGE_COUNTS, &thermistorAverageCounter, &thermistorAverageBuffer, &thermistorLastValidRaw);
+	if (temperature_F<0)
+	{
+		str_buffer[0]='-';
+		temperature_F*=-1;
+	}
+	else
+	{
+		str_buffer[0]=' ';
+	}
+	unsigned char aux = (unsigned char) temperature_F; //Casted to char
+	if (aux / 10 == 0)
+	{
+		str_buffer[1]=' ';
+	}
+	else
+	{
+		str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
+	}
+	str_buffer[2]=bcd2char(dec2bcd(aux));
+	str_buffer[3]= 'F';
+	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
+	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
+}

@@ -14,8 +14,9 @@
 #define THERMISTORNOMINAL_OHMS 10000.0
 #define TEMPERATURENOMINAL (CESIUS2KELVIN_CONSTANT + 25.0)
 
-double readTempCelsius(unsigned char channel);
-double readTempKelvin(unsigned char channel);
-double readTempFahrenheit(unsigned char channel);
+void NTCSensorAverageInit(unsigned char channel,  unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw);
+double readTempCelsius(unsigned char channel,  unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw);
+double readTempKelvin(unsigned char channel,  unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw);
+double readTempFahrenheit(unsigned char channel,  unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw);
 
 #endif /* NTCSENSOR_H_ */

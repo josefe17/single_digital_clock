@@ -9,9 +9,36 @@
 #include <math.h>
 #include "ADCDriver.h"
 
-double readTempKelvin(unsigned char channel)
+void NTCSensorAverageInit(unsigned char channel,  unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw)
 {
-	double raw = (double) readADC(channel);
+	(void) AVERAGE_COUNT;
+	(*averageCounter) = 0;
+	(*averageAcumulator) = 0;
+	(*lastValidRaw) = readADC(channel); // First raw is without average
+}
+
+double readTempKelvin(unsigned char channel, unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw)
+{
+	double raw;
+	if (AVERAGE_COUNT > 0) // Average on
+	{
+		if ((*averageCounter) < (AVERAGE_COUNT)) // Number of required average samples not achieved yet
+		{
+			(*averageAcumulator) += readADC(channel);
+			++(*averageCounter);			
+		}
+		if ((*averageCounter) >= (AVERAGE_COUNT)) // Number of average samples achieved (just above)
+		{
+			(*lastValidRaw) = (unsigned int) ((*averageAcumulator) / (unsigned long) AVERAGE_COUNT);
+			(*averageAcumulator) = 0;
+			(*averageCounter) = 0;			
+		}
+		raw = (double) (*lastValidRaw);
+	}
+	else
+	{
+		raw	= (double) readADC(channel);
+	}	
 	raw = (ADC_RESOLUTION-1) / raw -1;
 	double resistance = SERIESRESISTOR_OHMS / raw;
 	double steinhart = resistance / THERMISTORNOMINAL_OHMS;     // (R/Ro)
@@ -22,12 +49,12 @@ double readTempKelvin(unsigned char channel)
 	return steinhart;
 }
 
-double readTempCelsius(unsigned char channel)
+double readTempCelsius(unsigned char channel, unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw)
 {
-	return readTempKelvin(channel) - CESIUS2KELVIN_CONSTANT;
+	return readTempKelvin(channel, AVERAGE_COUNT, averageCounter, averageAcumulator, lastValidRaw) - CESIUS2KELVIN_CONSTANT;
 }
 
-double readTempFahrenheit(unsigned char channel)
+double readTempFahrenheit(unsigned char channel, unsigned int const AVERAGE_COUNT, unsigned int* averageCounter, unsigned long* averageAcumulator, unsigned int* lastValidRaw)
 {
-	return (1.8 * readTempCelsius(channel)) + 32.0;
+	return (1.8 * readTempCelsius(channel, AVERAGE_COUNT, averageCounter, averageAcumulator, lastValidRaw)) + 32.0;
 }
