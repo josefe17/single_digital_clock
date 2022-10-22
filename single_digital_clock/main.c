@@ -30,6 +30,7 @@
 unsigned char str_buffer[8]="        ";
 volatile time_data current_time;
 unsigned char power_fail_flag;
+volatile unsigned char ldradc;
 
 /*Fast skip timer resources*/
 unsigned char fast_skip_count;
@@ -101,6 +102,7 @@ typedef enum
 
 int main (void)
 {	
+	ldradc = 0;
 	volatile fsm_t clock_fsm; //Clock FSM model
 	
 	fsm_trans_t clock_tt[] = {
@@ -155,7 +157,8 @@ int main (void)
 	display_update(0, DISPLAY_TYPE_DVBX5210_PS2, str_buffer);
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	//update_clock_output(0);
-	set_brightness_display(0, (unsigned char) readADC(ADC_LDR_PIN));	
+	ldradc = (unsigned char) (readADC(ADC_LDR_PIN) >> 2);
+	set_brightness_display(0, ldradc);	
 	timer0_tick_init(T0_PRESCALER_1024, MS_10_TIMER_COUNT, MS_10_DELAY_CYCLES);	
 	
 	while(1)
@@ -164,7 +167,8 @@ int main (void)
 		power_fail_flag=check_oscillator_fault(DS3231_WRITE_ADDRESS);
 		increment_fast_skip_timer();
 		process_button_scanning_sequence();
-		set_brightness_display(0, (unsigned char) (ADC_LDR_PIN));	
+		ldradc = (unsigned char) (readADC(ADC_LDR_PIN) >> 2);
+		set_brightness_display(0, ldradc);	
 		fsm_fire(&clock_fsm);	
 		showtemperature_C();		
 		delay_until_tick();			
@@ -506,7 +510,7 @@ void showtemperature_C(void)
 	unsigned char aux = (unsigned char) temperature_C; //Casted to char	
 	str_buffer[1]=bcd2char((dec2bcd(aux))>>4);
 	str_buffer[2]=bcd2char(dec2bcd(aux));	
-	str_buffer[3]= 'C';	
+	str_buffer[3]= 'C';		
 	display_update(0, DISPLAY_TYPE_UPSIDE_DOWN, str_buffer);
 	dots_update(0, DISPLAY_TYPE_UPSIDE_DOWN, 0, 0, (1<<7), 3);
 }
