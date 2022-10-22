@@ -30,10 +30,19 @@
 #define NUMBER_OF_ROWS 2
 #define NUMBER_OF_COLUMNS 4
 
-#define SET_BUTTON_MASK		0b10000000 // D, menu
-#define UP_BUTTON_MASK		0b00000100 // C, vol+
-#define DOWN_BUTTON_MASK	0b00100000 // B, vol-
+#define SET_BUTTON_MASK	 0x80 // D, menu
+#define UP_BUTTON_MASK	0x04	 // C, vol+
+#define DOWN_BUTTON_MASK 0x20	 // B, vol-
 #define CLOCK_BUTTON_MASK	0	//Compatibility mode
+
+#define HOUR_PLUS_BUTTON_MASK 0x04 // vol+
+#define HOUR_MINUS_BUTTON_MASK 0x20 // vol-
+#define MINUTE_BUTTON_PLUS_MASK 0x08 // ch+
+#define MINUTE_BUTTON_MINUS_MASK 0x40 //ch-
+#define OK_BUTTON_MASK 0x02
+#define MENU_BUTTON_MASK 0x80 
+#define POWER_BUTTON_MASK 0x01 
+
 
 volatile unsigned char button_flags; //A&B
 volatile unsigned char pind_debug;
